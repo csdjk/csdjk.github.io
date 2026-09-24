@@ -1,1 +1,1 @@
-# AdSense is not configured. No seller ID has been authorized yet.
+google.com, pub-2738465085973579, DIRECT, f08c47fec0942fa0

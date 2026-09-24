@@ -1,6 +1,6 @@
 window.ATLAS_ADS_CONFIG = {
   "enabled": false,
-  "publisherId": "",
+  "publisherId": "ca-pub-2738465085973579",
   "slotId": "",
   "allowedHosts": [
     "csdjk.github.io"
