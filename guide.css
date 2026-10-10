@@ -1,0 +1,21 @@
+/* Editorial content uses the existing application theme; specimens keep their own material. */
+.style-guide { margin: 32px 0; padding: clamp(20px, 3vw, 36px); border: 1px solid var(--atlas-line); border-radius: 22px; color: var(--atlas-ink); background: var(--atlas-paper); }
+.style-guide h2 { margin: 0 0 14px; font-size: clamp(23px, 3vw, 30px); }
+.style-guide h3 { margin: 0 0 10px; font-size: 18px; line-height: 1.5; }
+.style-guide p { margin: 0; line-height: 1.85; max-width: 76ch; }
+.style-guide .guide-note { color: var(--atlas-muted); font-size: 13px; }
+.guide-nav, .guide-related { display: flex; flex-wrap: wrap; gap: 10px 22px; padding: 18px 0; }
+.style-guide a, .static-directory a { color: var(--atlas-accent); text-decoration: underline; text-underline-offset: 4px; overflow-wrap: anywhere; }
+.guide-sections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 36px; margin: 16px 0 28px; }
+.guide-sections section { min-width: 0; scroll-margin-top: 110px; }
+.guide-sections section:first-child, .guide-sections section[data-guide-field="implementation"] { grid-column: 1 / -1; }
+.guide-sources { border-top: 1px solid var(--atlas-line); padding-top: 22px; }
+.guide-sources ul { padding-left: 22px; line-height: 1.9; }
+.static-directory { padding: 28px; }
+.static-directory ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; padding-left: 20px; }
+.demo-context { margin: 18px 0; color: var(--atlas-muted); line-height: 1.7; font-size: 13px; }
+@media (max-width: 700px) {
+ .guide-sections, .static-directory ul { grid-template-columns: minmax(0, 1fr); }
+ .style-guide { padding: 20px 16px; border-radius: 16px; }
+ .guide-sections { gap: 24px; }
+}

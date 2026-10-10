@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <base href="../../">
+  <meta name="google-adsense-account" content="ca-pub-2738465085973579">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <script src="theme.js"></script>
+  <title>数字资产钱包设计指南 · UI 风格图鉴</title>
+  <meta name="description" content="以金额层级、网络和资产标识组织数字资产操作，视觉强调必须服从交易信息核对。这是钱包界面示例，不是投资建议或安全背书。">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="previews.css">
+  <link rel="stylesheet" href="previews-mobile.css">
+  <link rel="stylesheet" href="atlas.css">
+  <link rel="stylesheet" href="neumorphism.css">
+  <link rel="stylesheet" href="guide.css">
+  <noscript><style>.sidebar,.header-search,.header-meta,.site-theme,.menu-button{display:none!important}.site-header{position:static!important;display:flex!important;align-items:center;height:64px!important;padding:12px 18px!important}.brand{width:auto!important;flex:none!important}.app-shell{display:block}.main-column{width:100%}</style></noscript>
+  <script defer src="data/catalog.js"></script>
+  <script defer src="data/preview-profiles.js"></script>
+  <script defer src="previews.js"></script>
+  <link rel="stylesheet" href="ads.css">
+  <script defer src="ads.config.js"></script>
+  <script defer src="ads.js"></script>
+  <script defer src="data/guide-content.js"></script>
+  <script defer src="app.js"></script>
+  <link rel="canonical" href="https://csdjk.github.io/style/bitcoin-defi-mobile/">
+</head>
+<body>
+  <a class="skip-link" href="style/bitcoin-defi-mobile/index.html#main">跳到主要内容</a>
+  <header class="site-header">
+    <button class="icon-button menu-button" id="menu-button" type="button" aria-label="打开风格目录" aria-expanded="false" aria-controls="sidebar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+    <a class="brand" href="index.html" data-gallery-link aria-label="UI 风格图鉴首页"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>UI 风格图鉴<small>THE INTERFACE ATLAS</small></span></a>
+    <div class="header-search"><label class="sr-only" for="search">搜索风格、材质或关键词</label><div class="search-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input id="search" type="search" placeholder="搜索风格、材质或关键词…" autocomplete="off"><kbd>/</kbd></div></div>
+    <div class="header-meta"><span class="status-dot" aria-hidden="true"></span><span>离线可用</span><span class="header-divider"></span><span>UI/UX PRO MAX</span></div>
+    <div class="site-theme">
+      <span class="site-theme-label" id="site-theme-label">网站主题</span>
+      <div class="site-theme-switch" role="group" aria-labelledby="site-theme-label">
+        <button type="button" data-site-theme="light" aria-pressed="false" aria-label="浅色网站主题">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg><span>浅色</span>
+        </button>
+        <button type="button" data-site-theme="dark" aria-pressed="false" aria-label="深色网站主题">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.2A8.5 8.5 0 0 1 10.8 3.4 8.7 8.7 0 1 0 20.6 13.2Z"/></svg><span>深色</span>
+        </button>
+      </div>
+    </div>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="风格目录">
+      <div class="sidebar-top"><p class="sidebar-section-label">浏览图鉴</p></div>
+      <nav class="filter-list" aria-label="风格类型筛选">
+        <button data-filter="all" class="filter active" type="button" aria-pressed="true"><span>全部风格</span><b>79</b></button>
+        <button data-filter="favorites" class="filter" type="button" aria-pressed="false"><span>我的收藏</span><b id="favorite-count">0</b></button>
+        <div class="filter-divider"></div>
+        <button data-filter="active" class="filter" type="button" aria-pressed="false"><span>主风格</span><b>50</b></button>
+        <button data-filter="supplemental" class="filter" type="button" aria-pressed="false"><span>补充变体</span><b>29</b></button>
+        <button data-filter="Mobile" class="filter" type="button" aria-pressed="false"><span>移动端</span><b>17</b></button>
+        <button data-filter="BI/Analytics" class="filter" type="button" aria-pressed="false"><span>数据看板</span><b>10</b></button>
+      </nav>
+      <div class="sidebar-traits"><p class="sidebar-section-label">按视觉特征</p><nav id="trait-filters" aria-label="视觉特征筛选"></nav></div>
+      <div class="sidebar-list-heading"><span>快速定位</span><span id="index-count">79</span></div>
+      <div id="style-index" class="style-index"></div>
+      <details class="deprecated-list"><summary>已合并与替代条目 <span>9</span></summary><div id="deprecated-items"></div></details>
+      <div class="sidebar-footer"><span id="source-hash"></span></div>
+    </aside>
+    <div class="main-column">
+      <main id="main" tabindex="-1">
+<div class="detail-view"><div class="detail-top"><a class="back-link" href="index.html">← 返回风格总览</a><span class="detail-counter">71 / 79</span></div><div class="detail-heading"><div><p class="eyebrow">VISUAL LANGUAGE / DESIGN GUIDE</p><h1>数字资产钱包</h1><p class="detail-style-en">Bitcoin DeFi (Mobile)</p><p class="detail-description">以金额层级、网络和资产标识组织数字资产操作，视觉强调必须服从交易信息核对。这是钱包界面示例，不是投资建议或安全背书。</p></div></div><article class="style-guide" aria-labelledby="guide-title"><h2 id="guide-title">数字资产钱包设计指南</h2><p class="guide-note">本站编写的设计取舍与实现建议；实例是说明用的界面方案，不是客户案例、官方截图或效果承诺。目录中的部分条目是交互策略、业务布局或平台设计系统，并非同一层级的视觉流派。</p><nav class="guide-nav" aria-label="指南章节"><a href="style/bitcoin-defi-mobile/index.html#guide-principle">设计原理</a><a href="style/bitcoin-defi-mobile/index.html#guide-fit">适用场景</a><a href="style/bitcoin-defi-mobile/index.html#guide-avoid">不适用与取舍</a><a href="style/bitcoin-defi-mobile/index.html#guide-implementation">实现方法</a><a href="style/bitcoin-defi-mobile/index.html#guide-example">具体界面示例</a><a href="style/bitcoin-defi-mobile/index.html#guide-pitfall">常见误区</a></nav><div class="guide-sections"><section id="guide-principle" data-guide-field="principle"><h3>设计原理</h3><p>以金额层级、网络和资产标识组织数字资产操作，视觉强调必须服从交易信息核对。这是钱包界面示例，不是投资建议或安全背书。</p></section>
+<section id="guide-fit" data-guide-field="fit"><h3>适用场景</h3><p>钱包原型、资产记录、需要清楚展示网络与交易状态的工具。</p></section>
+<section id="guide-avoid" data-guide-field="avoid"><h3>不适用与取舍</h3><p>用炫目收益图推动交易，或省略地址、手续费与网络风险的确认流程。</p></section>
+<section id="guide-implementation" data-guide-field="implementation"><h3>实现方法</h3><p>分开资产数量与估值，标明估值币种和更新时间；交易前展示网络、地址、数量与费用。待确认、成功、失败各有文字，地址可完整查看和复制。</p></section>
+<section id="guide-example" data-guide-field="example"><h3>具体界面示例</h3><p>转账确认先显示网络与接收地址，再显示数量和预计费用；提交后给可核对交易标识，而不是立即显示到账。</p></section>
+<section id="guide-pitfall" data-guide-field="pitfall"><h3>常见误区</h3><p>金色与锁图标不证明安全；估值不是可提取余额，模拟收益和交易不能被写成真实业绩。</p></section></div><h3>继续比较</h3><p class="guide-note">结合材料、布局或父子变体比较选择。</p><nav class="guide-related" aria-label="相关风格"><a href="style/dark-mode-oled/index.html">OLED 纯黑</a><a href="style/glassmorphism/index.html">玻璃拟态</a><a href="style/aurora-ui/index.html">极光界面</a></nav></article><p class="demo-context">启用 JavaScript 可切换浅深色、收藏、使用组件演示并复制提示词。实例用于解释设计，不代表真实业务业绩。</p><nav class="style-pagination" aria-label="相邻风格"><a href="style/cyberpunk-mobile-hud/index.html">← 掌上赛博 HUD</a><a href="style/claymorphism-mobile/index.html">掌上黏土 →</a></nav></div>
+</main>
+      <aside id="site-ad-region" class="site-ad-region" aria-label="广告" hidden>
+        <div class="site-ad-label">广告</div>
+        <div id="site-ad-content" class="site-ad-content"></div>
+      </aside>
+      <footer class="site-legal-footer">
+        <span>UI 风格图鉴</span>
+        <nav aria-label="网站信息"><a href="about.html">关于本站</a><a href="privacy.html">隐私与广告</a><a href="about.html#contact">联系与反馈</a></nav>
+      </footer>
+    </div>
+  </div>
+  <div class="menu-scrim" id="menu-scrim" hidden></div>
+  <div id="compare-dock" class="compare-dock" hidden aria-label="风格对比栏"></div>
+  <dialog id="atlas-dialog" class="atlas-dialog" aria-labelledby="atlas-dialog-title"></dialog>
+  <div id="gallery-results-live" class="sr-only" role="status" aria-live="polite"></div>
+  <div class="global-toast" id="global-toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

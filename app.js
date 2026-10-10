@@ -21,6 +21,33 @@
   Object.assign(state, { group: "all", density: load("atlas:density", "standard"), previewTheme: load("atlas:previewTheme", "original"), comparison: new Set(), galleryScroll: 0, quickId: null, quickMode: null, compareMode: "original", searchTimer: 0 });
   if (!["standard", "large"].includes(state.density)) state.density = "standard";
   if (!["original", "light", "dark"].includes(state.previewTheme)) state.previewTheme = "original";
+  const guides = window.UI_STYLE_GUIDES;
+  if (!guides || styles.some(style => !guides[style.id])) throw new Error("风格指南不完整，请运行 python scripts/build_pages.py");
+  const siteRoot = new URL(".", document.querySelector('script[src$="app.js"]').src);
+  // Freeze the asset/link root across History API navigation.
+  let base = document.querySelector("base");
+  if (!base) { base = document.createElement("base"); document.head.prepend(base); }
+  base.href = siteRoot.href;
+  const detailHref = id => new URL(`style/${id}/${location.protocol === "file:" ? "index.html" : ""}`, siteRoot).href;
+  const galleryHref = () => new URL(location.protocol === "file:" ? "index.html" : ".", siteRoot).href;
+  function updateMetadata(style) {
+    const id = style?.id;
+    document.title = id ? profiles[id].name + "设计指南 · UI 风格图鉴" : "UI 风格图鉴 · UI/UX Pro Max";
+    document.querySelector('meta[name="description"]').content = id ? guides[id].description : "浏览 79 种 UI 风格的设计原理、适用与不适用场景、实现方法和常见误区，筛选、放大、对比并复制设计提示词。";
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) { canonical = document.createElement("link"); canonical.rel = "canonical"; document.head.appendChild(canonical); }
+    canonical.href = "https://csdjk.github.io/" + (id ? `style/${id}/` : "");
+  }
+  function navigate(id) {
+    if (!state.selected && id) state.galleryScroll = window.scrollY;
+    if (location.protocol === "file:") {
+      const hash = id ? "#/style/" + id : "#/";
+      if (location.hash === hash) route(); else location.hash = hash;
+      return;
+    }
+    history.pushState(null, "", id ? detailHref(id) : galleryHref());
+    route();
+  }
   const main = $("#main");
   const index = $("#style-index");
 
@@ -103,7 +130,7 @@
     const matching = getMatches();
     $("#index-count").textContent = matching.length;
     $("#favorite-count").textContent = state.favorites.size;
-    index.innerHTML = matching.length ? matching.map(style => `<a class="index-item ${state.selected === style.id ? "selected" : ""}" href="#/style/${style.id}" aria-current="${state.selected === style.id ? "page" : "false"}"><span class="index-chip" style="background:${recipeFor(style).accent}"></span><span class="index-name">${escapeHtml(profiles[style.id].name)}<small>${escapeHtml(style.name)}</small></span></a>`).join("") : '<p class="sidebar-empty">没有匹配的风格</p>';
+    index.innerHTML = matching.length ? matching.map(style => `<a class="index-item ${state.selected === style.id ? "selected" : ""}" href="${detailHref(style.id)}" aria-current="${state.selected === style.id ? "page" : "false"}"><span class="index-chip" style="background:${recipeFor(style).accent}"></span><span class="index-name">${escapeHtml(profiles[style.id].name)}<small>${escapeHtml(style.name)}</small></span></a>`).join("") : '<p class="sidebar-empty">没有匹配的风格</p>';
     document.querySelectorAll(".filter").forEach(button => { const active = button.dataset.filter === state.filter; button.classList.toggle("active", active); button.setAttribute("aria-pressed", String(active)); });
     document.querySelectorAll("[data-group]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.group === state.group)));
     $("#gallery-results-live").textContent = `${filterLabel()}${state.group !== "all" ? " · " + previewGroups[state.group] : ""}，共 ${matching.length} 种风格`;
@@ -112,16 +139,17 @@
   function renderDeprecated() {
     $("#deprecated-items").innerHTML = catalog.deprecated.map(item => {
       const replacement = item.domain === "style" ? byId.get(item.replacement) : null;
-      return `<div class="deprecated-item"><span>${escapeHtml(item.name)}</span>${replacement ? `<a href="#/style/${replacement.id}">查看 ${escapeHtml(replacement.name)} →</a>` : `<small>替代入口：${escapeHtml(item.replacementName)}<br>landing / ${escapeHtml(item.replacement)}</small>`}</div>`;
+      return `<div class="deprecated-item"><span>${escapeHtml(item.name)}</span>${replacement ? `<a href="${detailHref(replacement.id)}">查看 ${escapeHtml(replacement.name)} →</a>` : `<small>替代入口：${escapeHtml(item.replacementName)}<br>landing / ${escapeHtml(item.replacement)}</small>`}</div>`;
     }).join("");
   }
 
   function card(style) {
     const p = profiles[style.id], favorite = state.favorites.has(style.id), compared = state.comparison.has(style.id);
-    return `<article class="gallery-card ${compared ? "is-compared" : ""}" data-card="${style.id}"><a href="#/style/${style.id}" class="card-link card-preview-link" aria-label="查看 ${escapeHtml(p.name)} 完整演示">${previews.render(style, galleryMode(style))}</a><div class="card-body"><div class="card-title-row"><h3><a href="#/style/${style.id}">${escapeHtml(p.name)}</a></h3><button class="card-favorite ${favorite ? "is-favorite" : ""}" type="button" data-favorite="${style.id}" aria-label="${favorite ? "取消收藏" : "收藏"} ${escapeHtml(p.name)}" aria-pressed="${favorite}" title="${favorite ? "取消收藏" : "收藏"}">${icon("star",favorite)}</button></div><p class="card-english" title="${escapeHtml(style.name)}">${escapeHtml(style.name)}</p><div class="card-features">${tagsMarkup(style)}</div></div><div class="card-actions"><button class="compare-toggle" type="button" data-compare="${style.id}" aria-label="${compared ? "移出" : "加入"}对比：${escapeHtml(p.name)}" aria-pressed="${compared}">${icon(compared ? "check" : "compare")}<span>对比</span></button><button class="quick-button" type="button" data-quick="${style.id}" aria-label="放大预览 ${escapeHtml(p.name)}" title="放大预览">${icon("zoom")}</button><a href="#/style/${style.id}" class="card-open">查看演示 ${icon("up")}</a></div></article>`;
+    return `<article class="gallery-card ${compared ? "is-compared" : ""}" data-card="${style.id}"><a href="${detailHref(style.id)}" class="card-link card-preview-link" aria-label="查看 ${escapeHtml(p.name)} 完整演示">${previews.render(style, galleryMode(style))}</a><div class="card-body"><div class="card-title-row"><h3><a href="${detailHref(style.id)}">${escapeHtml(p.name)}</a></h3><button class="card-favorite ${favorite ? "is-favorite" : ""}" type="button" data-favorite="${style.id}" aria-label="${favorite ? "取消收藏" : "收藏"} ${escapeHtml(p.name)}" aria-pressed="${favorite}" title="${favorite ? "取消收藏" : "收藏"}">${icon("star",favorite)}</button></div><p class="card-english" title="${escapeHtml(style.name)}">${escapeHtml(style.name)}</p><div class="card-features">${tagsMarkup(style)}</div></div><div class="card-actions"><button class="compare-toggle" type="button" data-compare="${style.id}" aria-label="${compared ? "移出" : "加入"}对比：${escapeHtml(p.name)}" aria-pressed="${compared}">${icon(compared ? "check" : "compare")}<span>对比</span></button><button class="quick-button" type="button" data-quick="${style.id}" aria-label="放大预览 ${escapeHtml(p.name)}" title="放大预览">${icon("zoom")}</button><a href="${detailHref(style.id)}" class="card-open">查看演示 ${icon("up")}</a></div></article>`;
   }
 
   function renderGallery() {
+    updateMetadata(null);
     state.selected = null;
     document.title = "UI 风格图鉴 · UI/UX Pro Max";
     renderIndex();
@@ -162,7 +190,7 @@
     const mode=state.quickMode;
     const focusedAction=document.activeElement?.dataset.quickStep;
     dialog.classList.remove("is-comparison");
-    dialog.innerHTML=`<header class="atlas-dialog-header"><div><p class="eyebrow">STYLE CLOSE-UP</p><h2 id="atlas-dialog-title">${escapeHtml(p.name)}</h2></div><button class="atlas-icon-button" type="button" data-dialog-close aria-label="关闭预览" autofocus>${icon("close")}</button></header><div class="quick-layout"><div class="quick-visual">${previews.render(style,mode)}<div class="quick-visual-footer"><span>完整构图 · 实时材质</span><div class="segmented" role="group" aria-label="放大预览配色"><button type="button" data-modal-mode="light" aria-pressed="${mode === "light"}">浅色</button><button type="button" data-modal-mode="dark" aria-pressed="${mode === "dark"}">深色</button></div></div></div><div class="quick-info"><p class="quick-english">${escapeHtml(style.name)}</p><div class="card-features">${tagsMarkup(style)}</div><h3>识别特征</h3><p class="quick-note">${escapeHtml(p.note)}</p><h3>参考色板</h3><div class="quick-palette">${paletteDetails(style,mode)}</div><p class="quick-code">${escapeHtml(style.id)}</p><a class="atlas-primary" data-open-detail="${id}" href="#/style/${id}">打开完整组件演示 ${icon("up")}</a><button class="atlas-secondary" type="button" data-inline-copy="${id}" data-copy-mode="${mode}">复制风格提示词</button></div></div><footer class="atlas-dialog-footer"><span>← / → 切换风格 · Esc 关闭</span><div><button class="atlas-icon-button" type="button" data-quick-step="-1" aria-label="上一种风格">${icon("left")}</button><button class="atlas-icon-button" type="button" data-quick-step="1" aria-label="下一种风格">${icon("arrow")}</button></div></footer>`;
+    dialog.innerHTML=`<header class="atlas-dialog-header"><div><p class="eyebrow">STYLE CLOSE-UP</p><h2 id="atlas-dialog-title">${escapeHtml(p.name)}</h2></div><button class="atlas-icon-button" type="button" data-dialog-close aria-label="关闭预览" autofocus>${icon("close")}</button></header><div class="quick-layout"><div class="quick-visual">${previews.render(style,mode)}<div class="quick-visual-footer"><span>完整构图 · 实时材质</span><div class="segmented" role="group" aria-label="放大预览配色"><button type="button" data-modal-mode="light" aria-pressed="${mode === "light"}">浅色</button><button type="button" data-modal-mode="dark" aria-pressed="${mode === "dark"}">深色</button></div></div></div><div class="quick-info"><p class="quick-english">${escapeHtml(style.name)}</p><div class="card-features">${tagsMarkup(style)}</div><h3>识别特征</h3><p class="quick-note">${escapeHtml(p.note)}</p><h3>参考色板</h3><div class="quick-palette">${paletteDetails(style,mode)}</div><p class="quick-code">${escapeHtml(style.id)}</p><a class="atlas-primary" data-open-detail="${id}" href="${detailHref(id)}">打开完整组件演示 ${icon("up")}</a><button class="atlas-secondary" type="button" data-inline-copy="${id}" data-copy-mode="${mode}">复制风格提示词</button></div></div><footer class="atlas-dialog-footer"><span>← / → 切换风格 · Esc 关闭</span><div><button class="atlas-icon-button" type="button" data-quick-step="-1" aria-label="上一种风格">${icon("left")}</button><button class="atlas-icon-button" type="button" data-quick-step="1" aria-label="下一种风格">${icon("arrow")}</button></div></footer>`;
     if (!dialog.open) dialog.showModal();
     document.body.classList.add("modal-open");
     previews.mount();
@@ -179,7 +207,7 @@
     const picked=[...state.comparison]; if (picked.length<2) return;
     const dialog=$("#atlas-dialog"); state.quickId=null;
     dialog.classList.add("is-comparison");
-    dialog.innerHTML=`<header class="atlas-dialog-header"><div><p class="eyebrow">SIDE BY SIDE</p><h2 id="atlas-dialog-title">把不同放在一起看。</h2></div><div class="comparison-header-actions"><div class="segmented" role="group" aria-label="对比配色">${[["original","原始"],["light","浅色"],["dark","深色"]].map(([value,label])=>`<button type="button" data-compare-mode="${value}" aria-pressed="${state.compareMode===value}">${label}</button>`).join("")}</div><button class="atlas-icon-button" type="button" data-dialog-close aria-label="关闭对比" autofocus>${icon("close")}</button></div></header><div class="comparison-grid" style="--compare-columns:${picked.length}">${picked.map(id=> { const style=byId.get(id),p=profiles[id],mode=state.compareMode==='original'?style.defaultMode:state.compareMode; return `<article class="comparison-item">${previews.render(style,mode)}<div class="comparison-info"><h3>${escapeHtml(p.name)}</h3><p class="quick-english">${escapeHtml(style.name)}</p><div class="card-features">${tagsMarkup(style)}</div><p class="quick-note">${escapeHtml(p.note)}</p><div class="quick-palette">${paletteDetails(style,mode)}</div><a class="atlas-secondary" href="#/style/${id}" data-compare-detail="${mode}">查看完整演示 ${icon("up")}</a></div></article>`; }).join("")}</div><footer class="atlas-dialog-footer"><span>比较布局、材质、字体与层级，而不只比较颜色。</span><button class="atlas-secondary" type="button" data-dialog-close>继续挑选</button></footer>`;
+    dialog.innerHTML=`<header class="atlas-dialog-header"><div><p class="eyebrow">SIDE BY SIDE</p><h2 id="atlas-dialog-title">把不同放在一起看。</h2></div><div class="comparison-header-actions"><div class="segmented" role="group" aria-label="对比配色">${[["original","原始"],["light","浅色"],["dark","深色"]].map(([value,label])=>`<button type="button" data-compare-mode="${value}" aria-pressed="${state.compareMode===value}">${label}</button>`).join("")}</div><button class="atlas-icon-button" type="button" data-dialog-close aria-label="关闭对比" autofocus>${icon("close")}</button></div></header><div class="comparison-grid" style="--compare-columns:${picked.length}">${picked.map(id=> { const style=byId.get(id),p=profiles[id],mode=state.compareMode==='original'?style.defaultMode:state.compareMode; return `<article class="comparison-item">${previews.render(style,mode)}<div class="comparison-info"><h3>${escapeHtml(p.name)}</h3><p class="quick-english">${escapeHtml(style.name)}</p><div class="card-features">${tagsMarkup(style)}</div><p class="quick-note">${escapeHtml(p.note)}</p><div class="quick-palette">${paletteDetails(style,mode)}</div><a class="atlas-secondary" href="${detailHref(id)}" data-compare-detail="${mode}">查看完整演示 ${icon("up")}</a></div></article>`; }).join("")}</div><footer class="atlas-dialog-footer"><span>比较布局、材质、字体与层级，而不只比较颜色。</span><button class="atlas-secondary" type="button" data-dialog-close>继续挑选</button></footer>`;
     if (!dialog.open) dialog.showModal();
     document.body.classList.add("modal-open"); previews.mount();
   }
@@ -200,7 +228,7 @@
   }
 
   function resetGalleryPosition() { state.galleryScroll=0; window.scrollTo({top:0,behavior:"instant"}); }
-  function applyFilter() { resetGalleryPosition(); closeMenu(); if (state.selected) location.hash="#/"; else renderGallery(); }
+  function applyFilter() { resetGalleryPosition(); closeMenu(); if (state.selected) navigate(null); else renderGallery(); }
 
   function featureArt(style) {
     const feature = style.recipe.feature;
@@ -254,19 +282,19 @@
 
   function shortPrompt(style, mode = modeFor(style)) {
     const palette = recipeFor(style, mode);
-    return `请使用 $ui-ux-pro-max skill，采用准确的风格 ID「${style.id}」（${style.name}）设计我的页面。以${mode === "dark" ? "深色" : "浅色"}模式为主，配色参考：背景 ${palette.bg}、界面 ${palette.surface}、强调 ${palette.accent}；同时提供另一模式切换。原始风格要求：${style.prompt} 请保持文字清晰、交互可用，并根据实际产品内容调整文案。`;
+    return `请使用 $ui-ux-pro-max skill，采用准确的风格 ID「${style.id}」（${style.name}）设计我的页面。以${mode === "dark" ? "深色" : "浅色"}模式为主，配色参考：背景 ${palette.bg}、界面 ${palette.surface}、强调 ${palette.accent}；同时提供另一模式切换。原始风格要求：${style.prompt} 实现重点：${guides[style.id].implementation} 避免：${guides[style.id].pitfall} 请保持文字清晰、交互可用，并根据实际产品内容调整文案。`;
   }
 
   function fullPrompt(style, mode = modeFor(style)) {
     const palette = recipeFor(style, mode);
     const other = recipeFor(style, mode === "dark" ? "light" : "dark");
-    return `请使用 $ui-ux-pro-max skill，为我的产品设计并实现一页「${style.name}」风格的完整 UI。\n\n风格定位：Style ID = ${style.id}；状态 = ${style.status}${style.parent ? `；父风格 = ${style.parent}` : ""}。请使用 skill 的 style 数据查询此 ID，并以其规则为设计依据。\n\n当前选中${mode === "dark" ? "深色" : "浅色"}模式，以它作为主要复刻目标：背景 ${palette.bg}、界面 ${palette.surface}、文字 ${palette.ink}、强调 ${palette.accent}。同时实现匹配的${mode === "dark" ? "浅色" : "深色"}模式，可参考背景 ${other.bg}、界面 ${other.surface}、文字 ${other.ink}、强调 ${other.accent}。两种模式都要保持此风格的识别特征、清晰对比与完整交互。\n\n原始视觉关键词：${style.prompt}\n技术与材质提示：${style.technical}\n适用场景：${style.bestFor}\n\n请展示：导航、Hero、排版与色板、主次按钮、输入框与选择控件、卡片、指标与图表、列表/表格、标签、提示、进度、折叠内容和弹窗。每个控件要有清晰的 hover、focus、active、disabled 或错误状态，且样式在整页保持统一。移动风格优先按手机界面构图；其他风格同时适配桌面和手机。\n\n交付前请实际运行并截图检查两种模式的布局、文字、间距、溢出、对比度和键盘操作；尊重 prefers-reduced-motion。请结合我的实际产品需求填充真实内容，不要照搬演示页的 STUDIO OS 示例文案。`;
+    return `请使用 $ui-ux-pro-max skill，为我的产品设计并实现一页「${style.name}」风格的完整 UI。\n\n风格定位：Style ID = ${style.id}；状态 = ${style.status}${style.parent ? `；父风格 = ${style.parent}` : ""}。请使用 skill 的 style 数据查询此 ID，并以其规则为设计依据。\n\n当前选中${mode === "dark" ? "深色" : "浅色"}模式，以它作为主要复刻目标：背景 ${palette.bg}、界面 ${palette.surface}、文字 ${palette.ink}、强调 ${palette.accent}。同时实现匹配的${mode === "dark" ? "浅色" : "深色"}模式，可参考背景 ${other.bg}、界面 ${other.surface}、文字 ${other.ink}、强调 ${other.accent}。两种模式都要保持此风格的识别特征、清晰对比与完整交互。\n\n原始视觉关键词：${style.prompt}\n技术与材质提示：${style.technical}\n本风格实现建议：${guides[style.id].implementation}\n常见误区：${guides[style.id].pitfall}\n适用场景：${style.bestFor}\n\n请展示：导航、Hero、排版与色板、主次按钮、输入框与选择控件、卡片、指标与图表、列表/表格、标签、提示、进度、折叠内容和弹窗。每个控件要有清晰的 hover、focus、active、disabled 或错误状态，且样式在整页保持统一。移动风格优先按手机界面构图；其他风格同时适配桌面和手机。\n\n交付前请实际运行并截图检查两种模式的布局、文字、间距、溢出、对比度和键盘操作；尊重 prefers-reduced-motion。请结合我的实际产品需求填充真实内容，不要照搬演示页的 STUDIO OS 示例文案。`;
   }
 
   function renderDetail(style) {
     window.AtlasAds?.setContentAvailable(true);
     state.selected = style.id;
-    document.title = profiles[style.id].name + " · UI 风格图鉴";
+    updateMetadata(style);
     save("atlas:lastStyle", style.id);
     renderIndex();
     const position = styles.findIndex(item => item.id === style.id);
@@ -275,7 +303,7 @@
     const mobile = style.type === "Mobile";
     const mode = modeFor(style);
     const recipe = recipeFor(style, mode);
-    main.innerHTML = `<div class="detail-view"><div class="detail-top"><a href="#/" class="back-link">← 返回风格总览</a><span class="detail-counter">${String(position + 1).padStart(2,"0")} / 79</span></div><div class="detail-heading"><div><p class="eyebrow">${escapeHtml(mobile ? "MOBILE EXPERIENCE" : style.type === "BI/Analytics" ? "DATA & INSIGHT" : style.status === "supplemental" ? "STYLE VARIANT" : "VISUAL LANGUAGE")}</p><h1>${escapeHtml(profiles[style.id].name)}</h1><p class="detail-style-en">${escapeHtml(style.name)}</p><p class="detail-signature">${escapeHtml(profiles[style.id].note)}</p><p class="detail-description">${escapeHtml(style.bestFor)}</p><div class="detail-tags"><span>${escapeHtml(style.status === "active" ? "主风格" : "补充变体")}</span><span>${escapeHtml(style.type)}</span>${style.parent ? `<a href="#/style/${style.parent}">父风格：${escapeHtml(byId.get(style.parent)?.name || style.parent)} ↗</a>` : ""}</div></div><div class="detail-palette" aria-label="风格主色">${paletteMarkup(recipe)}</div></div><div class="detail-toolbar"><div class="toolbar-left"><span class="live-label"><i></i> 实时组件演示</span><span class="toolbar-separator"></span><span>${mobile ? "手机画布" : "响应式画布"}</span></div><div class="mode-switcher" role="group" aria-label="预览配色"><button type="button" data-mode="light" aria-pressed="${mode === "light"}">☀ 浅色</button><button type="button" data-mode="dark" aria-pressed="${mode === "dark"}">☾ 深色</button></div><div class="toolbar-actions"><button type="button" class="tool-favorite ${state.favorites.has(style.id) ? "is-favorite" : ""}" data-favorite="${style.id}" aria-pressed="${state.favorites.has(style.id)}">${state.favorites.has(style.id) ? "★ 已收藏" : "☆ 收藏"}</button><button type="button" class="tool-copy" data-copy="short">复制风格提示词</button><button type="button" class="tool-copy primary" data-copy="full">复制完整复刻提示词 ↗</button></div></div><div class="preview-stage ${mobile ? "mobile-preview" : ""}">${mobile ? '<div class="phone-frame"><div class="phone-notch" aria-hidden="true"></div><div class="phone-screen">' : '<div class="desktop-frame">'}${demo({ ...style, recipe, currentMode: mode })}${mobile ? "</div></div>" : "</div>"}</div><details class="prompt-details"><summary>查看与手动复制提示词 <span>⌄</span></summary><div class="prompt-grid"><div><div class="prompt-title"><h2>简短风格提示词</h2><button type="button" data-copy="short">复制</button></div><textarea id="prompt-short" readonly aria-label="简短风格提示词">${escapeHtml(shortPrompt(style))}</textarea></div><div><div class="prompt-title"><h2>完整页面复刻提示词</h2><button type="button" data-copy="full">复制</button></div><textarea id="prompt-full" readonly aria-label="完整页面复刻提示词">${escapeHtml(fullPrompt(style))}</textarea></div></div><p class="copy-hint" id="copy-hint">提示词包含本风格的技能 ID 与原始关键词。请把你的产品需求一并交给 AI。</p></details><nav class="style-pagination" aria-label="相邻风格"><a href="#/style/${previous.id}"><span>← 上一种</span><strong>${escapeHtml(previous.name)}</strong></a><a href="#/style/${next.id}"><span>下一种 →</span><strong>${escapeHtml(next.name)}</strong></a></nav><footer class="site-footer">示例内容仅供视觉比较 · 数据快照 ${catalog.sha256.slice(0, 12)}</footer></div>`;
+    main.innerHTML = `<div class="detail-view"><div class="detail-top"><a href="${galleryHref()}" data-gallery-link class="back-link">← 返回风格总览</a><span class="detail-counter">${String(position + 1).padStart(2,"0")} / 79</span></div><div class="detail-heading"><div><p class="eyebrow">${escapeHtml(mobile ? "MOBILE EXPERIENCE" : style.type === "BI/Analytics" ? "DATA & INSIGHT" : style.status === "supplemental" ? "STYLE VARIANT" : "VISUAL LANGUAGE")}</p><h1>${escapeHtml(profiles[style.id].name)}</h1><p class="detail-style-en">${escapeHtml(style.name)}</p><p class="detail-signature">${escapeHtml(profiles[style.id].note)}</p><p class="detail-description">${escapeHtml(style.bestFor)}</p><div class="detail-tags"><span>${escapeHtml(style.status === "active" ? "主风格" : "补充变体")}</span><span>${escapeHtml(style.type)}</span>${style.parent ? `<a href="${detailHref(style.parent)}">父风格：${escapeHtml(byId.get(style.parent)?.name || style.parent)} ↗</a>` : ""}</div></div><div class="detail-palette" aria-label="风格主色">${paletteMarkup(recipe)}</div></div>${guides[style.id].html}<p class="demo-context">以下是共用的 STUDIO OS 组件测试画布，方便对比材质与状态；文案与数字均为虚构演示。上方指南与具体界面示例用于解释本风格的设计取舍。</p><div class="detail-toolbar"><div class="toolbar-left"><span class="live-label"><i></i> 实时组件演示</span><span class="toolbar-separator"></span><span>${mobile ? "手机画布" : "响应式画布"}</span></div><div class="mode-switcher" role="group" aria-label="预览配色"><button type="button" data-mode="light" aria-pressed="${mode === "light"}">☀ 浅色</button><button type="button" data-mode="dark" aria-pressed="${mode === "dark"}">☾ 深色</button></div><div class="toolbar-actions"><button type="button" class="tool-favorite ${state.favorites.has(style.id) ? "is-favorite" : ""}" data-favorite="${style.id}" aria-pressed="${state.favorites.has(style.id)}">${state.favorites.has(style.id) ? "★ 已收藏" : "☆ 收藏"}</button><button type="button" class="tool-copy" data-copy="short">复制风格提示词</button><button type="button" class="tool-copy primary" data-copy="full">复制完整复刻提示词 ↗</button></div></div><div class="preview-stage ${mobile ? "mobile-preview" : ""}">${mobile ? '<div class="phone-frame"><div class="phone-notch" aria-hidden="true"></div><div class="phone-screen">' : '<div class="desktop-frame">'}${demo({ ...style, recipe, currentMode: mode })}${mobile ? "</div></div>" : "</div>"}</div><details class="prompt-details"><summary>查看与手动复制提示词 <span>⌄</span></summary><div class="prompt-grid"><div><div class="prompt-title"><h2>简短风格提示词</h2><button type="button" data-copy="short">复制</button></div><textarea id="prompt-short" readonly aria-label="简短风格提示词">${escapeHtml(shortPrompt(style))}</textarea></div><div><div class="prompt-title"><h2>完整页面复刻提示词</h2><button type="button" data-copy="full">复制</button></div><textarea id="prompt-full" readonly aria-label="完整页面复刻提示词">${escapeHtml(fullPrompt(style))}</textarea></div></div><p class="copy-hint" id="copy-hint">提示词包含本风格的技能 ID 与原始关键词。请把你的产品需求一并交给 AI。</p></details><nav class="style-pagination" aria-label="相邻风格"><a href="${detailHref(previous.id)}"><span>← 上一种</span><strong>${escapeHtml(previous.name)}</strong></a><a href="${detailHref(next.id)}"><span>下一种 →</span><strong>${escapeHtml(next.name)}</strong></a></nav><footer class="site-footer">示例内容仅供视觉比较 · 数据快照 ${catalog.sha256.slice(0, 12)}</footer></div>`;
     main.scrollTop = 0;
     window.scrollTo(0, 0);
   }
@@ -365,15 +393,25 @@
 
   function route() {
     const dialog=$("#atlas-dialog"); if (dialog.open) dialog.close();
-    let hash=location.hash; try { hash=decodeURIComponent(hash); } catch { /* Invalid deep link falls back to the gallery. */ }
-    const match=hash.match(/^#\/style\/([a-z0-9-]+)$/), style=match && byId.get(match[1]);
+    let hash=location.hash; try { hash=decodeURIComponent(hash); } catch { /* Invalid fragment. */ }
+    const legacy=hash.match(/^#\/style\/([a-z0-9-]+)$/);
+    const path=location.pathname.slice(siteRoot.pathname.length).match(/^style\/([a-z0-9-]+)\/(?:index\.html)?$/);
+    // The old gallery fragment overrides a detail path; section anchors retain it.
+    const id=hash.startsWith("#/") ? legacy?.[1] : path?.[1];
+    const style=byId.get(id);
+    if (hash.startsWith("#/") && location.protocol !== "file:") {
+      history.replaceState(null, "", style ? detailHref(style.id) : galleryHref());
+    }
     if (style) {
       if (!state.selected) state.galleryScroll=window.scrollY;
       renderDetail(style);
     } else {
-      renderGallery(); requestAnimationFrame(()=>window.scrollTo({top:state.galleryScroll,behavior:"instant"}));
+      renderGallery();
+      requestAnimationFrame(()=>window.scrollTo({top:state.galleryScroll,behavior:"instant"}));
     }
+    document.querySelector(".brand").href=galleryHref();
     closeMenu();
+    if (hash.startsWith("#guide-")) requestAnimationFrame(()=>document.getElementById(hash.slice(1))?.scrollIntoView());
   }
 
   function showDemoToast(demoRoot) {
@@ -402,12 +440,28 @@
     const group=closest("[data-group]"); if (group) { state.group=state.group===group.dataset.group ? "all" : group.dataset.group; applyFilter(); return; }
     const filter = closest("[data-filter]");
     if (filter) { state.filter = filter.dataset.filter; applyFilter(); return; }
-    const link=closest('a[href^="#/style/"]');
-    if (link && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
-      const id=link.getAttribute('href').slice(8);
-      const mode=link.dataset.openDetail ? state.quickMode : link.dataset.compareDetail || (!state.selected && state.previewTheme!=="original" ? state.previewTheme : null);
-      if (mode && byId.has(id)) { state.modes[id]=mode; save("atlas:modes",state.modes); }
-      if (dialog.open) dialog.close();
+    const link=closest("a[href]");
+    const plainClick=event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey;
+    if (link && plainClick && !link.target && !link.hasAttribute("download")) {
+      const url=new URL(link.href);
+      const match=url.href.startsWith(siteRoot.href) && url.pathname.slice(siteRoot.pathname.length).match(/^style\/([a-z0-9-]+)\/(?:index\.html)?$/);
+      if (match && byId.has(match[1]) && !url.hash) {
+        event.preventDefault();
+        const id=match[1];
+        const mode=link.dataset.openDetail ? state.quickMode : link.dataset.compareDetail || (!state.selected && state.previewTheme!=="original" ? state.previewTheme : null);
+        if (mode && byId.has(id)) { state.modes[id]=mode; save("atlas:modes",state.modes); }
+        if (dialog.open) dialog.close();
+        navigate(id);
+        return;
+      }
+      if (link.hasAttribute("data-gallery-link")) { event.preventDefault(); navigate(null); return; }
+      // Chapter links also work in the static document without JavaScript.
+      if (match && match[1] === state.selected && url.hash.startsWith("#guide-")) {
+        event.preventDefault();
+        if (location.protocol !== "file:") history.pushState(null, "", location.pathname + location.search + url.hash);
+        document.getElementById(url.hash.slice(1))?.scrollIntoView();
+        return;
+      }
     }
     const favorite = event.target.closest("[data-favorite]");
     if (favorite) { toggleFavorite(favorite.dataset.favorite); return; }
@@ -453,7 +507,7 @@
 
   $("#search").addEventListener("input", event => {
     state.query=event.target.value; clearTimeout(state.searchTimer);
-    state.searchTimer=setTimeout(()=>{ resetGalleryPosition(); if (state.selected) location.hash="#/"; else renderGallery(); },100);
+    state.searchTimer=setTimeout(()=>{ resetGalleryPosition(); if (state.selected) navigate(null); else renderGallery(); },100);
   });
   $("#menu-button").addEventListener("click", () => {
     const open = $("#sidebar").classList.toggle("open");
@@ -483,7 +537,8 @@
       else if (!event.shiftKey && document.activeElement===nodes.at(-1)) { event.preventDefault(); nodes[0]?.focus(); }
     }
   });
-  window.addEventListener("hashchange", route);
+  window.addEventListener("hashchange", () => { if (location.hash.startsWith("#/")) route(); });
+  window.addEventListener("popstate", () => { if (!location.hash.startsWith("#/")) route(); });
   $("#source-hash").textContent = `本地数据快照 · ${catalog.sha256.slice(0, 8)}`;
   $("#trait-filters").innerHTML=Object.entries(previewGroups).map(([id,label])=>`<button type="button" class="group-filter" data-group="${id}" aria-pressed="false"><i class="group-dot group-${id}"></i><span>${label}</span><small>${styles.filter(s=>profiles[s.id].group===id).length}</small></button>`).join("");
   renderDeprecated();
